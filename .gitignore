@@ -1,0 +1,10 @@
+*
+!/**/
+!*.*
+*.o
+*.cf
+*.lst
+*.mif
+toplevel
+*.ghw
+*.vcd
