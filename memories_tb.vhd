@@ -1,5 +1,5 @@
 -------------------------------------------------------
---! @rom_simples_tb.vhd
+--! @memories_tb.vhd
 --! @brief TestBench das memórias do PoliLeg
 --! @author Tiago M Lucio (tiagolucio@usp.br)
 --! @date 2022-06-12
