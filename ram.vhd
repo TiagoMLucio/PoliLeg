@@ -15,7 +15,7 @@ entity ram is
         word_s: natural := 32; -- Width in bits
         init_f: string := "rom.dat"
     );
-    port (
+    port (          
         ck : in bit;
         rd, wr: in bit; -- enables (read and write)
         addr : in bit_vector(addr_s - 1 downto 0);
@@ -45,13 +45,13 @@ architecture arch of ram is
       --! Memory matrix
       signal mem : mem_type := init_mem(init_f);
 begin
-    process(rd, ck)
+    process(ck)
     begin
-        if (rd = '1') then
-            data_o <= mem(to_integer(unsigned(addr)));
-        end if;
         if (rising_edge(ck) and wr='1') then
             mem(to_integer(unsigned(addr))) <= data_i;
         end if;
     end process;
+        
+    data_o <= mem(to_integer(unsigned(addr))) when rd = '1';
+
 end arch ; -- arch

@@ -8,6 +8,7 @@
 library ieee;
 use ieee.numeric_bit.all;
 
+
 entity memories_tb is
 end memories_tb;
 
@@ -33,10 +34,27 @@ architecture tb of memories_tb is
         );
     end component;
 
+    component ram is
+        generic (
+            addr_s: natural := 64; -- Size in bits
+            word_s: natural := 32; -- Width in bits
+            init_f: string := "rom.dat"
+        );
+        port (
+            ck : in bit;
+            rd, wr: in bit; -- enables (read and write)
+            addr : in bit_vector(addr_s - 1 downto 0);
+            data_i : in bit_vector(word_s - 1 downto 0);
+            data_o : out bit_vector(word_s - 1 downto 0 )
+        );
+    end component;
+    
     -- sinais de suporte
     signal addr: bit_vector(3 downto 0);
     signal data1: bit_vector(7 downto 0);
     signal data2: bit_vector(31 downto 0);
+    signal data_i, data_o: bit_vector(31 downto 0);
+    signal ck, rd, wr : bit := '0';
 
     type mem_t1 is array (0 to 15) of bit_vector(7 downto 0);
     type mem_t2 is array (0 to 15) of bit_vector(31 downto 0);
@@ -64,22 +82,50 @@ architecture tb of memories_tb is
         "11111111111111111111111111111111"
     );
 
+    constant ClockPeriod : time := 1 ns;
+
 begin
     dutA: rom_simples port map(addr, data1);
-    dutB: rom generic map(4, 32, "rom.dat") port map(addr, data2);
-    
+    dutB: rom generic map(4) port map(addr, data2);
+    dutC: ram generic map(4) port map(ck, rd, wr, addr, data_i, data_o);
+
+    -- Process for generating the clock
+    ck <= not ck after ClockPeriod / 2; 
+
     -- Estímulos
     stim: process
     begin
+        report "Read Tests";
         for i in 0 to 15 loop
             addr <= bit_vector(to_unsigned(i, 4));
+            if (i mod 2 = 0) then
+                rd <= '1';
+            else
+                rd <= '0';
+            end if;
             wait for 1 ns;
             assert data1 = mem1(i)
             report "ROM_simples";
             assert data2 = mem2(i)
             report "ROM";
+            if (i mod 2 = 0) then
+                assert data_o = mem2(i)
+                report "RAM Read";
+            end if;
         end loop;
-        report "End of tests";
+        report "End of Read Tests / Begin of Write Tests";
+        rd <= '1';
+        for i in 0 to 15 loop
+            addr <= bit_vector(to_unsigned(i, 4));
+            data_i <= mem2(15 - i);
+            wr <= '1';
+            wait for 1 ns;
+            wr <= '0';
+            assert data_o = mem2(15 - i)
+            report "RAM Write";
+            wait for 1 ns;
+        end loop;
+        report "End of Write Tests";
         wait;
     end process;
 end architecture;
