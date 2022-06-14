@@ -74,7 +74,8 @@ architecture arch of regfile is
 begin
 
     regs : for i in 0 to reg_n-2 generate
-            load(i) <= '1' when (i = unsigned(wr)) and regWrite = '1';
+            load(i) <= '1' when (i = unsigned(wr)) and regWrite = '1' else
+                       '0';
             reg_i: d_register generic map (word_s) port map(clock, reset, load(i), d, q(i));
     end generate ; -- regs
 
