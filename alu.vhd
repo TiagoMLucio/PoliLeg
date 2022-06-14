@@ -32,8 +32,8 @@ begin
     Slt <= (0 => '1', others => '0') when signed(A) < signed(B) else
            (others => '0');
 
-    Add <= bit_vector(signed(A(size - 1) & A) + signed(B(size - 1) & B));
-    Sub <= bit_vector(signed(A(size - 1) & A) - signed(B(size - 1) & B));
+    Add <= bit_vector(signed('0' & A) + signed('0' & B));
+    Sub <= bit_vector(signed('0' & A) + signed('0' & bit_vector(signed(not B) + 1)));
 
     with S select
         O <= A and B when "0000",
@@ -54,5 +54,7 @@ begin
                 (S = "0010" and ((A(size - 1) = B(size - 1)) and (A(size - 1) /= O(size - 1)))) or 
                 (S = "0110" and  ((A(size - 1) /= B(size - 1)) and (A(size - 1) /= O(size - 1)))) else
           '0';
+
+    F <= O;
 
 end arch ; -- arch
