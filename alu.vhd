@@ -18,7 +18,7 @@ end entity alu1b;
 
 architecture arch of alu1b is
 
-    signal A_2, B_2, Add : bit;
+    signal A_2, B_2, Add, Co_aux : bit;
 
 begin
 
@@ -26,7 +26,7 @@ begin
     B_2 <= B when Binv = '0' else not B;
 
     Add <= A_2 xor B_2 xor Ci;
-    Co <= (A_2 and B_2) or (A_2 and Ci) or (B_2 and Ci);
+    Co_aux <= ((A_2 and B_2) or ((A_2 or B_2) and Ci));
 
     with Op select
         F <= A_2 and B_2 when "00",
@@ -35,11 +35,8 @@ begin
              Less when "11";
     
     Set <= Add;
-
-    Ov <= '1' when 
-                ((Ainv = Binv) and (A = B and A /= Add)) or 
-                ((Ainv /= Binv) and  (A /= B and A /= Add)) else
-          '0';
+    Co <= Co_aux;
+    Ov <= Ci xor Co_aux;
 
 end arch ; -- arch
 
@@ -79,13 +76,12 @@ begin
     Op <= S(1 downto 0);
     Ainv <= S(3);
     Binv <= S(2);
-    Ci(0) <= S(2);
 
-    alu1b_0: alu1b port map(A(0), B(0), Set(size - 1), Ci(0), Ainv, Binv, Op, O(0), Ci(1), Set(0), open);
+    alu1b_0: alu1b port map(A(0), B(0), Set(size - 1), S(2), Ainv, Binv, Op, O(0), Ci(1), Set(0), open);
 
     alus : for i in 1 to size - 2 generate    
         alu1b_i: alu1b port map(A(i), B(i), '0', Ci(i), Ainv, Binv, Op, O(i), Ci(i + 1), Set(i), open);
-    end generate ; -- alus
+    end generate; -- alus
 
     alu1b_n: alu1b port map(A(size - 1), B(size - 1), '0', Ci(size - 1), Ainv, Binv, Op, O(size - 1), Co, Set(size - 1), Ov); 
 
