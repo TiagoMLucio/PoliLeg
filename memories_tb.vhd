@@ -38,7 +38,7 @@ architecture tb of memories_tb is
         generic (
             addr_s: natural := 64; -- Size in bits
             word_s: natural := 32; -- Width in bits
-            init_f: string := "rom.dat"
+            init_f: string := "ram.dat"
         );
         port (
             ck : in bit;

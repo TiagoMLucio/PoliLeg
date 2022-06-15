@@ -38,8 +38,8 @@ architecture arch of rom is
         end loop;
         return tmp_mem;
       end;
-      --! Memory matrix
-      constant mem : mem_type := init_mem(init_f);
+
+      signal mem : mem_type := init_mem(init_f);
 begin
     
     data <= mem(to_integer(unsigned(addr)));

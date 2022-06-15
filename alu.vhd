@@ -8,6 +8,44 @@
 library ieee;
 use ieee.numeric_bit.all;
 
+entity alu1b is
+    port (
+        A, B, Less, Ci, Ainv, Binv : in bit;
+        Op : in bit_vector(1 downto 0); 
+        F, Co, Set, Ov : out bit
+    );
+end entity alu1b;
+
+architecture arch of alu1b is
+
+    signal A_2, B_2, Add : bit;
+
+begin
+
+    A_2 <= A when Ainv = '0' else not A;
+    B_2 <= B when Binv = '0' else not B;
+
+    Add <= A_2 xor B_2 xor Ci;
+    Co <= (A_2 and B_2) or (A_2 and Ci) or (B_2 and Ci);
+
+    with Op select
+        F <= A_2 and B_2 when "00",
+             A_2 or B_2 when "01",
+             Add when "10",
+             Less when "11";
+    
+    Set <= Add;
+
+    Ov <= '1' when 
+                ((Ainv = Binv) and (A = B and A /= Add)) or 
+                ((Ainv /= Binv) and  (A /= B and A /= Add)) else
+          '0';
+
+end arch ; -- arch
+
+library ieee;
+use ieee.numeric_bit.all;
+
 entity alu is
     generic (
         size : natural := 64
@@ -24,37 +62,34 @@ end entity alu;
 
 architecture arch of alu is
 
-    signal O, Slt: bit_vector(size - 1 downto 0);
-    signal Add, Sub: bit_vector(size downto 0);
+    component alu1b is
+        port (
+            A, B, Less, Ci, Ainv, Binv : in bit;
+            Op : in bit_vector(1 downto 0); 
+            F, Co, Set, Ov : out bit
+        );
+    end component;
+
+    signal O, Ci, Set : bit_vector(size - 1 downto 0);
+    signal Op : bit_vector (1 downto 0);
+    signal Ainv, Binv : bit;
 
 begin
 
-    Slt <= (0 => '1', others => '0') when signed(A) < signed(B) else
-           (others => '0');
+    Op <= S(1 downto 0);
+    Ainv <= S(3);
+    Binv <= S(2);
+    Ci(0) <= S(2);
 
-    Add <= bit_vector(signed('0' & A) + signed('0' & B));
-    Sub <= bit_vector(signed('0' & A) + signed('0' & bit_vector(signed(not B) + 1)));
+    alu1b_0: alu1b port map(A(0), B(0), Set(size - 1), Ci(0), Ainv, Binv, Op, O(0), Ci(1), Set(0), open);
 
-    with S select
-        O <= A and B when "0000",
-             A or B when "0001",
-             Add(size - 1 downto 0) when "0010",
-             Sub(size - 1 downto 0) when "0110",
-             Slt when "0111",
-             A nor B when "1100",
-             (others => '0') when others;
+    alus : for i in 1 to size - 2 generate    
+        alu1b_i: alu1b port map(A(i), B(i), '0', Ci(i), Ainv, Binv, Op, O(i), Ci(i + 1), Set(i), open);
+    end generate ; -- alus
 
-    Z <= '1' when unsigned(O) = 0 else
-         '0';
-    
-    Co <= Add(size) when S = "0010" else
-          Sub(size);
-
-    Ov <= '1' when 
-                (S = "0010" and ((A(size - 1) = B(size - 1)) and (A(size - 1) /= O(size - 1)))) or 
-                (S = "0110" and  ((A(size - 1) /= B(size - 1)) and (A(size - 1) /= O(size - 1)))) else
-          '0';
+    alu1b_n: alu1b port map(A(size - 1), B(size - 1), '0', Ci(size - 1), Ainv, Binv, Op, O(size - 1), Co, Set(size - 1), Ov); 
 
     F <= O;
+    Z <= '1' when unsigned(O) = 0 else '0';
 
 end arch ; -- arch
